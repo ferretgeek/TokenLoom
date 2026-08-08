@@ -1,0 +1,70 @@
+name: token-loom
+
+x-app-environment: &app-environment
+  APP_ENV: production
+  APP_NAME: 令牌织机 · TokenLoom
+  DATABASE_URL: postgresql+asyncpg://token_loom:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/token_loom
+  ADMIN_KEY_HASH: ${ADMIN_KEY_HASH:?set ADMIN_KEY_HASH in .env}
+  SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
+  DATA_DIR: /var/lib/token-loom
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+  TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-127.0.0.1,::1}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,::1}
+  MIN_FREE_BYTES: ${MIN_FREE_BYTES:-268435456}
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: token_loom
+      POSTGRES_USER: token_loom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U token_loom -d token_loom"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TOKEN_LOOM_PORT:-8787}:8787"
+    volumes:
+      - app-data:/var/lib/token-loom
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app-data:/var/lib/token-loom
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+volumes:
+  postgres-data:
+  app-data:

@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Install exact dependencies
+        run: python -m pip install --requirement requirements-dev.txt
+      - name: Lint, compile, and test
+        run: |
+          ruff format --check app scripts tests
+          ruff check app scripts tests
+          python -m compileall -q app scripts tests
+          pytest -q
+          node --check app/static/app.js
+          node --check app/static/login.js
+          node --check demo/demo.js
+      - name: Audit dependencies and high-severity Python findings
+        run: |
+          python -m pip_audit -r requirements.txt --progress-spinner off
+          bandit -q -lll -r app scripts
+      - name: Scan source for secrets
+        run: |
+          detect-secrets scan --all-files --exclude-files '(^|/)(\.git|\.venv|\.pytest_cache|\.ruff_cache|__pycache__|docs/images)(/|$)' . > /tmp/detect-secrets.json
+          python - <<'PY'
+          import json
+          with open("/tmp/detect-secrets.json", encoding="utf-8") as handle:
+              report = json.load(handle)
+          findings = sum(len(items) for items in report.get("results", {}).values())
+          if findings:
+              for filename, items in sorted(report["results"].items()):
+                  for item in items:
+                      print(f"{filename}:{item['line_number']}: {item['type']}")
+              raise SystemExit(f"detect-secrets found {findings} unresolved result(s)")
+          PY
+      - name: Verify visual assets and local links
+        run: |
+          python - <<'PY'
+          import re
+          import struct
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          def png_size(path):
+              data = path.read_bytes()
+              assert data.startswith(b"\x89PNG\r\n\x1a\n") and data[12:16] == b"IHDR"
+              return struct.unpack(">II", data[16:24])
+
+          assert Path("demo/assets/app.css").read_bytes() == Path("app/static/app.css").read_bytes()
+          for name in ("favicon.svg", "favicon-32.png", "favicon.ico"):
+              assert Path("demo/assets", name).read_bytes() == Path("app/static", name).read_bytes()
+          dashboard = Path("docs/images/dashboard.png")
+          social = Path("docs/images/social-preview.png")
+          assert png_size(dashboard) == (1280, 720)
+          assert png_size(social) == (1280, 640)
+          assert social.stat().st_size < 1_000_000
+          missing = []
+          pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+          for markdown in Path(".").rglob("*.md"):
+              for raw in pattern.findall(markdown.read_text(encoding="utf-8")):
+                  target = raw.strip().split("#", 1)[0]
+                  if not target or "://" in target or target.startswith(("mailto:", "#")):
+                      continue
+                  if not (markdown.parent / unquote(target)).resolve().exists():
+                      missing.append(f"{markdown}: {raw}")
+          assert not missing, "Missing local links:\n" + "\n".join(missing)
+          PY
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_PASSWORD: ci-only-database-password
+      ADMIN_KEY_HASH: ci-only-argon2id-placeholder
+      SESSION_SECRET: ci-only-session-secret-at-least-32-bytes
+      ENCRYPTION_KEY: ci-only-placeholder
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate Compose model
+        run: docker compose config --quiet
+      - name: Build non-root image
+        run: docker build --tag token-loom:test .

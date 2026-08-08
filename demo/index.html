@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="jade">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#168a70">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>令牌织机 · TokenLoom 演示</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="shortcut icon" href="./assets/favicon.ico">
+  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="stylesheet" href="./assets/demo.css">
+  <script src="./demo.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="./" aria-label="TokenLoom 演示首页">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><strong>令牌织机</strong><small>TokenLoom · 授权令牌续期</small></span>
+      </a>
+      <nav class="side-nav" aria-label="演示导航">
+        <button class="nav-item active" data-demo-action="总览"><span class="nav-icon grid-icon"></span>总览</button>
+        <button class="nav-item" data-demo-action="邮箱资产"><span class="nav-icon mail-icon"></span>邮箱资产</button>
+        <button class="nav-item" data-demo-action="导入中心"><span class="nav-icon import-icon"></span>导入中心</button>
+        <button class="nav-item" data-demo-action="任务记录"><span class="nav-icon pulse-icon"></span>任务记录</button>
+        <button class="nav-item" data-demo-action="刷新策略"><span class="nav-icon gear-icon"></span>刷新策略</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="expiry-card"><div class="expiry-ring"><span>60</span><small>天</small></div><div><b>下一次续期节奏</b><p>在有效窗口前留出余地</p></div></div>
+      <div class="secure-state"><span class="status-dot"></span><div><b>演示数据已脱敏</b><small>此页面不会发出网络请求</small></div></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobile-menu" aria-label="打开导航"><span class="hamburger"></span></button>
+        <div class="page-heading"><p>2026 年 8 月 9 日 · 安静运行</p><h1>邮箱令牌总览</h1></div>
+        <div class="top-actions">
+          <div class="theme-wrap">
+            <button class="icon-button" id="palette-button" aria-label="选择配色"><span class="palette-icon"></span></button>
+            <div class="theme-popover" id="theme-popover" hidden>
+              <p>全局配色</p>
+              <div class="theme-swatches">
+                <button data-theme-choice="jade" class="active" aria-label="翡翠浅色"><i></i></button>
+                <button data-theme-choice="sky" aria-label="天青浅色"><i></i></button>
+                <button data-theme-choice="sunset" aria-label="晚霞浅色"><i></i></button>
+              </div>
+            </div>
+          </div>
+          <button class="icon-button mode-toggle" id="dark-toggle" aria-label="切换到深灰模式" title="切换到深灰模式"><span class="mode-icon sun-glyph"></span><span class="mode-icon moon-glyph"></span></button>
+          <button class="button button-primary" data-demo-action="导入邮箱"><span class="plus">＋</span> 导入邮箱</button>
+        </div>
+      </header>
+
+      <section class="notice-banner demo-banner">
+        <span class="notice-icon"></span>
+        <div><b>一座只为授权数据工作的续期台</b><p>看见节奏、异常与边界；示例邮箱、数字和任务均为合成数据。</p></div>
+        <span class="demo-pill">LIVE DEMO</span>
+      </section>
+
+      <section class="metric-grid" aria-label="合成指标">
+        <article class="metric-card primary-metric"><div class="metric-top"><span class="metric-icon database-icon"></span><span class="metric-trend">全部资产</span></div><strong>12,480</strong><p>已授权邮箱</p><small>较昨日 + 240</small><progress class="meter" max="100" value="78"></progress></article>
+        <article class="metric-card"><div class="metric-top"><span class="metric-icon check-icon"></span><span class="metric-caption">近 24 小时</span></div><strong>98.7%</strong><p>取件健康</p><small>12,318 枚令牌状态平稳</small><progress class="meter" max="100" value="98.7"></progress></article>
+        <article class="metric-card warning-metric"><div class="metric-top"><span class="metric-icon timer-icon"></span><span class="metric-caption">未来 14 天</span></div><strong>326</strong><p>等待续期</p><small>已进入安全刷新窗口</small><progress class="meter" max="100" value="34"></progress></article>
+        <article class="metric-card danger-metric"><div class="metric-top"><span class="metric-icon alert-icon"></span><span class="metric-caption">需要查看</span></div><strong>19</strong><p>异常提醒</p><small>不会覆盖原 Refresh Token</small><progress class="meter" max="100" value="12"></progress></article>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="content-column">
+          <section class="panel account-panel" id="accounts">
+            <div class="panel-head"><div><p class="kicker">资产切片</p><h2>最近关注</h2></div><div class="panel-tools"><span class="search-box"><span class="search-glyph"></span><input aria-label="搜索合成邮箱" placeholder="完整邮箱精确查找"><button data-demo-action="搜索">搜索</button></span></div></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>邮箱</th><th>状态</th><th>上次刷新</th><th>有效窗口</th><th>下次计划</th><th class="right">操作</th></tr></thead>
+              <tbody>
+                <tr><td><div class="email-cell"><span class="email-avatar">O</span><div>li••••@outlook.example<small>8 月授权导入</small></div></div></td><td><span class="status-badge healthy">取件正常</span></td><td><span class="date-main">08-09 04:20</span><span class="date-sub">2026</span></td><td><span class="date-main">11-07</span><span class="date-sub">90 天后</span></td><td><span class="date-main">10-08 03:30</span><span class="date-sub">60 天后</span></td><td class="right"><button class="row-action" data-demo-action="刷新示例账号">刷新</button></td></tr>
+                <tr><td><div class="email-cell"><span class="email-avatar">H</span><div>mi••••@hotmail.example<small>日常授权池</small></div></div></td><td><span class="status-badge refreshed">刷新成功</span></td><td><span class="date-main">08-09 03:31</span><span class="date-sub">2026</span></td><td><span class="date-main">11-07</span><span class="date-sub">90 天后</span></td><td><span class="date-main">10-08 03:30</span><span class="date-sub">60 天后</span></td><td class="right"><button class="row-action" data-demo-action="体检示例账号">体检</button></td></tr>
+                <tr><td><div class="email-cell"><span class="email-avatar">O</span><div>ya••••@outlook.example<small>迁移批次</small></div></div></td><td><span class="status-badge transient_error">暂时异常</span></td><td><span class="date-main">08-08 22:14</span><span class="date-sub">2026</span></td><td><span class="date-main">—</span><span class="date-sub">等待复核</span></td><td><span class="date-main">08-10 03:30</span><span class="date-sub">明天重试</span></td><td class="right"><button class="row-action" data-demo-action="查看异常">查看</button></td></tr>
+              </tbody></table>
+            </div>
+          </section>
+        </div>
+        <aside class="side-column">
+          <section class="panel side-panel"><div class="panel-head"><div><p class="kicker">任务流</p><h2>正在织入</h2></div></div><article class="job-card"><div class="job-card-head"><span class="job-kind">刷</span><div><b>到期账号 · 安全续期</b><small>240 / 326 · 成功 238 · 失败 2</small></div><span class="job-state running">进行中</span></div><progress class="job-progress" max="100" value="73.6"></progress><div class="job-stats"><span>73.6%</span><span>预计 2 分钟</span></div></article><article class="job-card"><div class="job-card-head"><span class="job-kind">检</span><div><b>授权样本 · 只读取件</b><small>40 / 40 · 成功 40</small></div><span class="job-state completed">已完成</span></div><progress class="job-progress" max="100" value="100"></progress></article></section>
+        </aside>
+      </section>
+      <p class="demo-footnote">TokenLoom 与 Microsoft 无隶属或背书关系。仅用于你拥有或明确获授权管理的账号与令牌。</p>
+    </main>
+  </div>
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+</body>
+</html>

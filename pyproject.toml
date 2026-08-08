@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+# FastAPI intentionally declares dependency providers and form fields in
+# parameter defaults; this is the framework's supported interface.
+ignore = ["B008", "RUF001"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/config.py" = ["S105"]
+"app/services.py" = ["S105"]
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/run_qa.py" = ["S603", "S607"]
+"scripts/stop_qa.py" = ["S110"]

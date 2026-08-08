@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="jade">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="csrf-token" content="{{ csrf }}">
+  <meta name="theme-color" content="#168a70">
+  <title>{{ app_name }}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/app.css?v=1.0.0">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><strong>{{ app_name }}</strong><small>安全刷新管理</small></span>
+      </a>
+      <nav class="side-nav" aria-label="主导航">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon grid-icon"></span>总览</button>
+        <button class="nav-item" data-focus="accounts"><span class="nav-icon mail-icon"></span>邮箱资产</button>
+        <button class="nav-item" data-open="import"><span class="nav-icon import-icon"></span>导入中心</button>
+        <button class="nav-item" data-open="jobs"><span class="nav-icon pulse-icon"></span>任务记录</button>
+        <button class="nav-item" data-open="settings"><span class="nav-icon gear-icon"></span>刷新策略</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="expiry-card">
+        <div class="expiry-ring"><span>90</span><small>天</small></div>
+        <div><b>令牌有效窗口</b><p>建议至少每 60 天刷新一次</p></div>
+      </div>
+      <div class="secure-state"><span class="status-dot"></span><div><b>隐私保护已启用</b><small>敏感字段加密存储</small></div></div>
+      <button class="logout-button" id="logout-button"><span>↪</span> 安全退出</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobile-menu" aria-label="打开导航"><span class="hamburger"></span></button>
+        <div class="page-heading"><p id="today-label">续航状态</p><h1>邮箱令牌总览</h1></div>
+        <div class="top-actions">
+          <div class="theme-wrap">
+            <button class="icon-button" id="palette-button" aria-label="选择配色"><span class="palette-icon"></span></button>
+            <div class="theme-popover" id="theme-popover" hidden>
+              <p>全局配色</p>
+              <div class="theme-swatches">
+                <button data-theme-choice="jade" class="active" aria-label="翡翠浅色"><i></i></button>
+                <button data-theme-choice="sky" aria-label="天青浅色"><i></i></button>
+                <button data-theme-choice="sunset" aria-label="晚霞浅色"><i></i></button>
+              </div>
+            </div>
+          </div>
+          <button class="icon-button mode-toggle" id="dark-toggle" aria-label="切换到深灰模式" title="切换到深灰模式"><span class="mode-icon sun-glyph"></span><span class="mode-icon moon-glyph"></span></button>
+          <button class="button button-primary" data-open="import"><span class="plus">＋</span> 导入邮箱</button>
+        </div>
+      </header>
+
+      <section class="notice-banner">
+        <span class="notice-icon"></span>
+        <div><b>三个月令牌窗口提醒</b><p>Refresh Token 通常约 90 天需要续期；当前策略为每 <strong id="policy-days">60</strong> 天自动刷新，建议先抽样测试。</p></div>
+        <button class="text-button" data-open="settings">查看策略 <span>→</span></button>
+      </section>
+
+      <section class="metric-grid" aria-label="关键指标">
+        <article class="metric-card primary-metric">
+          <div class="metric-top"><span class="metric-icon database-icon"></span><span class="metric-trend">实时资产</span></div>
+          <strong data-count="total">—</strong><p>邮箱总数</p><div class="metric-spark bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top"><span class="metric-icon check-icon"></span><span class="metric-caption">健康 / 已刷新</span></div>
+          <strong data-count="healthy">—</strong><p>状态正常</p><progress class="meter" id="healthy-meter" max="100" value="0" aria-label="正常邮箱比例"></progress>
+        </article>
+        <article class="metric-card warning-metric">
+          <div class="metric-top"><span class="metric-icon timer-icon"></span><span class="metric-caption">未来 14 天</span></div>
+          <strong data-count="expiring">—</strong><p>即将到期</p><small><span data-count="overdue">—</span> 个已到刷新时间</small>
+        </article>
+        <article class="metric-card danger-metric">
+          <div class="metric-top"><span class="metric-icon alert-icon"></span><span class="metric-caption">需要关注</span></div>
+          <strong data-count="invalid">—</strong><p>令牌失效</p><small><span data-count="attention">—</span> 个暂时或取件异常</small>
+        </article>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="account-panel" id="accounts-section">
+          <div class="panel-heading">
+            <div><p class="kicker">邮箱资产</p><h2>令牌健康清单</h2></div>
+            <div class="panel-actions">
+              <button class="button button-soft" id="refresh-selected" disabled>刷新所选</button>
+              <button class="button button-soft" id="health-selected" disabled>体检所选</button>
+              <button class="button button-quiet danger-text" id="delete-selected" disabled>删除</button>
+            </div>
+          </div>
+          <div class="filter-bar">
+            <div class="search-box"><span></span><input id="email-search" type="search" placeholder="输入完整邮箱精确查找" autocomplete="off"><button id="search-submit">搜索</button></div>
+            <label class="select-wrap"><select id="status-filter">
+              <option value="all">全部状态</option>
+              {% for key, value in status_labels.items() %}<option value="{{ key }}">{{ value }}</option>{% endfor %}
+            </select></label>
+            <label class="select-wrap compact"><select id="page-size"><option>25</option><option>50</option><option>100</option></select></label>
+          </div>
+          <div class="bulk-line" id="bulk-line" hidden><span>已选择 <b id="selected-count">0</b> 个邮箱</span><button id="clear-selection">清空选择</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th class="check-cell"><input type="checkbox" id="select-page" aria-label="选择本页"></th><th>邮箱</th><th>状态</th><th>最近刷新</th><th>到期提醒</th><th>下次刷新</th><th class="right">操作</th></tr></thead>
+              <tbody id="account-rows"><tr><td colspan="7"><div class="loading-state"><span></span>正在读取邮箱资产…</div></td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination"><p id="page-summary">第 1 页</p><div><button class="page-button" id="prev-page" disabled>← 上一页</button><button class="page-button" id="next-page" disabled>下一页 →</button></div></div>
+        </div>
+
+        <aside class="activity-panel">
+          <div class="panel-heading compact-heading"><div><p class="kicker">队列动态</p><h2>最近任务</h2></div><button class="text-button" data-open="jobs">查看全部</button></div>
+          <div id="recent-jobs" class="job-list"><div class="loading-state"><span></span>读取任务…</div></div>
+          <div class="quick-actions">
+            <button data-action="refresh-due"><span class="action-orb refresh-orb"></span><div><b>刷新到期邮箱</b><small>按策略处理当前到期项</small></div><i>→</i></button>
+            <button data-action="health-all"><span class="action-orb health-orb"></span><div><b>全部取件体检</b><small>真实验证 OAuth2 与 IMAP</small></div><i>→</i></button>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" hidden></div>
+  <section class="modal" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title" hidden>
+    <button class="modal-close" data-close aria-label="关闭">×</button>
+    <div class="modal-head"><span class="modal-symbol import-symbol"></span><div><p class="kicker">导入中心</p><h2 id="import-title">添加邮箱资产</h2><p>支持手动填写、批量粘贴与 TXT 文件。每行一个账号，敏感字段会在服务端加密。</p></div></div>
+    <form id="import-form">
+      <div class="import-tabs" role="tablist"><button type="button" class="active" data-import-tab="paste">粘贴 / 手动填写</button><button type="button" data-import-tab="file">导入 TXT 文件</button></div>
+      <div class="tab-pane active" data-import-pane="paste"><label>账号内容</label><textarea name="text" id="import-text" rows="9" spellcheck="false" placeholder="邮箱----密码----client_id----refresh_token"></textarea><p class="field-help">单次粘贴上限 10 MB；空行与 # 开头的注释会自动忽略。</p></div>
+      <div class="tab-pane" data-import-pane="file"><label class="drop-zone" id="drop-zone"><input type="file" name="file" id="import-file" accept=".txt,text/plain"><span class="upload-art"></span><b>选择或拖放 TXT 文件</b><small id="file-name">支持流式导入，适合大体量数据</small></label></div>
+      <div class="form-grid"><label>来源名称<input name="source_name" placeholder="例如：8 月新增邮箱"></label><label>遇到重复邮箱<select name="duplicate_mode"><option value="update">更新凭据（推荐）</option><option value="skip">跳过已有邮箱</option></select></label></div>
+      <div class="modal-actions"><button type="button" class="button button-quiet" data-close>取消</button><button type="submit" class="button button-primary" id="import-submit">开始安全导入</button></div>
+    </form>
+  </section>
+
+  <section class="modal modal-small" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <button class="modal-close" data-close aria-label="关闭">×</button>
+    <div class="modal-head"><span class="modal-symbol settings-symbol"></span><div><p class="kicker">自动化</p><h2 id="settings-title">刷新策略</h2><p>默认每 60 天续期一次，始终早于 90 天提醒窗口。</p></div></div>
+    <form id="settings-form">
+      <div class="form-grid"><label>刷新间隔（天）<input type="number" name="interval_days" min="1" max="89" required></label><label>每日调度时间<input type="time" name="schedule_time" required></label></div>
+      <label>调度时区<input name="timezone" value="Asia/Shanghai" required></label>
+      <div class="form-grid three"><label>刷新并发<input type="number" name="refresh_concurrency" min="1" max="150"></label><label>体检并发<input type="number" name="health_concurrency" min="1" max="30"></label><label>失败重试<input type="number" name="max_retries" min="1" max="5"></label></div>
+      <div class="policy-warning"><span>!</span><p>设置超过 60 天会缩短异常重试余量；系统最多允许 89 天。</p></div>
+      <div class="modal-actions"><button type="button" class="button button-quiet" data-close>取消</button><button type="submit" class="button button-primary">保存策略</button></div>
+    </form>
+  </section>
+
+  <section class="drawer" id="jobs-drawer" role="dialog" aria-modal="true" aria-labelledby="jobs-title" hidden>
+    <div class="drawer-head"><div><p class="kicker">可恢复任务队列</p><h2 id="jobs-title">任务记录</h2></div><button class="modal-close" data-close aria-label="关闭">×</button></div>
+    <div id="all-jobs" class="job-list detailed"></div>
+  </section>
+
+  <div class="confirm" id="confirm-dialog" role="dialog" aria-modal="true" hidden><div class="confirm-icon">!</div><h3 id="confirm-title">确认操作</h3><p id="confirm-message"></p><div><button class="button button-quiet" id="confirm-cancel">取消</button><button class="button button-primary" id="confirm-ok">确认</button></div></div>
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+  <script src="/static/app.js?v=1.0.0" defer></script>
+</body>
+</html>

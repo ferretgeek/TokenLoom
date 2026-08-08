@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">TokenLoom</title>
+  <rect width="64" height="64" rx="17" fill="#17191d"/>
+  <path d="M17 18v28M47 18v28M16 22h32M16 42h32" fill="none" stroke="#d8f4e9" stroke-width="4" stroke-linecap="round"/>
+  <path d="M23 17c0 9 18 7 18 15S23 38 23 47" fill="none" stroke="#4fd0aa" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="23" cy="17" r="4" fill="#ffb984"/>
+  <circle cx="23" cy="47" r="4" fill="#7eb9ee"/>
+</svg>

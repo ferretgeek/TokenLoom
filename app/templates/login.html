@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="jade">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#168a70">
+  <title>安全登录 · {{ app_name }}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/app.css?v=1.0.0">
+  <script src="/static/login.js?v=1.0.0" defer></script>
+</head>
+<body class="login-page">
+  <div class="login-theme-dock" aria-label="全局主题">
+    <button data-theme-choice="jade" class="active" aria-label="翡翠浅色" title="翡翠浅色"><i></i></button>
+    <button data-theme-choice="sky" aria-label="天青浅色" title="天青浅色"><i></i></button>
+    <button data-theme-choice="sunset" aria-label="晚霞浅色" title="晚霞浅色"><i></i></button>
+    <button id="login-dark-toggle" class="mode-toggle" aria-label="切换到深灰模式" title="切换到深灰模式"><span class="mode-icon sun-glyph"></span><span class="mode-icon moon-glyph"></span></button>
+  </div>
+  <div class="login-aurora login-aurora-a"></div>
+  <div class="login-aurora login-aurora-b"></div>
+  <main class="login-shell">
+    <section class="login-story" aria-label="产品介绍">
+      <a class="brand brand-large" href="/login" aria-label="令牌织机 TokenLoom">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><strong>{{ app_name }}</strong><small>Authorized token renewal, woven calmly</small></span>
+      </a>
+      <div class="story-copy">
+        <span class="eyebrow"><span class="pulse-dot"></span> 安全续航中心</span>
+        <h1>让每一枚令牌，<br><em>准时呼吸。</em></h1>
+        <p>从批量导入、定时刷新到真实取件体检，在一处掌握整个邮箱池的健康状态。</p>
+      </div>
+        <div class="security-notes">
+          <div><span class="mini-icon shield-icon"></span><p><b>字段加密保护</b><small>敏感字段认证加密，页面默认脱敏</small></p></div>
+          <div><span class="mini-icon clock-icon"></span><p><b>可配置续期节奏</b><small>从安全窗口中留出从容余量</small></p></div>
+      </div>
+    </section>
+    <section class="login-panel">
+      <div class="login-card">
+        <div class="mobile-brand brand">
+          <span class="brand-mark"><i></i><i></i><i></i></span><strong>{{ app_name }}</strong>
+        </div>
+        <div class="lock-orbit" aria-hidden="true"><span class="lock-core"></span></div>
+        <p class="kicker">管理员入口</p>
+        <h2>欢迎回来</h2>
+        <p class="muted">输入保存在本地的管理员密钥以继续。</p>
+        <form id="login-form" method="post" action="/login" class="login-form" autocomplete="off">
+          <label for="admin-key">管理员密钥</label>
+          <div class="secret-field">
+            <span class="key-glyph"></span>
+            <input id="admin-key" name="admin_key" type="password" required autofocus placeholder="请输入管理员密钥" autocomplete="current-password">
+          </div>
+          <p class="field-hint">请输入部署时由你生成并离线保管的完整管理员密钥。</p>
+          {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+          <button id="login-submit" class="button button-primary button-wide" type="submit">
+            <span data-login-label>进入控制台</span><span class="login-arrow">→</span><span class="login-spinner" aria-hidden="true" hidden></span>
+          </button>
+          <p id="login-status" class="form-status" role="status" aria-live="polite" hidden></p>
+        </form>
+        <div class="login-foot"><span class="status-dot"></span>{% if transport_secure %} 当前使用 HTTPS 加密连接{% else %} 当前为本机 HTTP 调试连接 · 公网部署必须启用 HTTPS{% endif %}</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
