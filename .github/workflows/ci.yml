@@ -85,14 +85,12 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      POSTGRES_PASSWORD: ci-only-database-password
-      ADMIN_KEY_HASH: ci-only-argon2id-placeholder
-      SESSION_SECRET: ci-only-session-secret-at-least-32-bytes
-      ENCRYPTION_KEY: ci-only-placeholder
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate Compose model
-        run: docker compose config --quiet
+        run: |
+          cp .env.docker.example .env
+          docker compose config --quiet
+          rm .env
       - name: Build non-root image
         run: docker build --tag token-loom:test .
