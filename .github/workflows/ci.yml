@@ -27,7 +27,7 @@ jobs:
           ruff format --check app scripts tests
           ruff check app scripts tests
           python -m compileall -q app scripts tests
-          pytest -q
+          python -m pytest -q
           node --check app/static/app.js
           node --check app/static/login.js
           node --check demo/demo.js
