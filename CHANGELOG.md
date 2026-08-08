@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 - 2026-08-09
+
+- Validate the full test and security gate on Python 3.13 and 3.14.
+- Move the non-root container image to Python 3.14 after an online build and compatibility check.
+- Close the public release, fresh-clone, preview, and portfolio audit trail.
+
 ## 1.0.0 - 2026-08-09
 
 - First public TokenLoom release.
