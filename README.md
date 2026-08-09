@@ -1,4 +1,4 @@
-# 令牌织机 · TokenLoom
+# 令牌织机 / TokenLoom — Outlook OAuth 令牌续期
 
 [![CI](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml)

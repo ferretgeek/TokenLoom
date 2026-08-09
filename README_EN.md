@@ -1,4 +1,4 @@
-# TokenLoom · 令牌织机
+# TokenLoom / 令牌织机 — Outlook OAuth Token Renewal
 
 [![CI](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml)
