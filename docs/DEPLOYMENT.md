@@ -82,3 +82,13 @@ systemd 安装器会在新 Web 健康检查失败时恢复上一版本，并只�
 - 默认审计保留 180 天、结束任务保留 90 天；导入始终保留 `MIN_FREE_BYTES` 磁盘余量。
 - 全部体检会真实访问 Microsoft OAuth 与 IMAP；从低并发开始，遵守服务条款、租户限制与授权范围。
 - 轮换 `SESSION_SECRET` 会让所有会话失效。当前版本不支持在线轮换 `ENCRYPTION_KEY`，不要直接替换它。
+
+## 健康检查、排错与卸载
+
+- `/healthz` 失败：同时检查 Web、Worker、PostgreSQL、`/etc/token-admin.env` 权限和磁盘余量；不要在工单中粘贴环境文件。
+- 登录失败：核对 Argon2id 哈希和限速状态；管理员原始密钥不会存进数据库，无法从服务端找回。
+- 解密失败：确认数据库与 `ENCRYPTION_KEY` 来自同一备份集。不要用新密钥反复尝试覆盖旧数据。
+- 任务不推进：只保留一个 Worker，检查租约、上游 Microsoft 网络与租户限制，再以低并发重试。
+- 代理循环或 Cookie 丢失：核对 `COOKIE_SECURE`、可信代理 IP、覆盖后的转发头和精确 `ALLOWED_HOSTS`。
+
+卸载前停止 Web/Worker 和入口流量，完成并验证成套加密备份。Docker 可先 `docker compose down`；删除卷会永久清除数据库，必须单独明确执行。systemd 应移除/禁用两个单元、Nginx 站点和程序版本目录；只有确认不再恢复后，才删除 PostgreSQL 数据库/角色、`/etc/token-admin.env` 和服务账号。若秘密可能泄露，还要在相关系统轮换或撤销，删除文件并不能使旧值失效。

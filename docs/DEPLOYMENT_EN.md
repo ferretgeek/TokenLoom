@@ -54,3 +54,15 @@ Copy `deploy/token-admin-nginx.example.conf`, replace its example host and certi
 Back up the PostgreSQL database, runtime environment secrets, and original admin key as one protected set. The database is unusable without `ENCRYPTION_KEY`; encrypt backup media and test restores in isolation. Run one Worker only. Start external checks at low concurrency and comply with Microsoft terms, tenant limits, and the authorization scope.
 
 Rotating `SESSION_SECRET` revokes every session. Version 1.0 does not implement online `ENCRYPTION_KEY` rotation; replacing it directly makes encrypted fields unreadable.
+
+## Upgrade, health, troubleshooting, and removal
+
+For Docker, take the paired backup first, then rebuild/recreate and verify `/healthz` plus login, import, and one low-risk check. For systemd, rerun `deploy/install.sh` with the new source; its health gate retains bounded rollback candidates and preserves the environment/database.
+
+- A failed `/healthz` requires checking Web, Worker, PostgreSQL, environment-file permissions, and free disk without exposing the environment file.
+- Login failures require checking the Argon2id hash and rate-limit state; the original admin key cannot be recovered from the server.
+- Decryption failures mean the database and `ENCRYPTION_KEY` are not a matched backup set. Never overwrite data by repeatedly trying new keys.
+- Stalled work requires exactly one Worker, lease checks, Microsoft connectivity/tenant limits, and a low-concurrency retry.
+- Proxy loops or missing cookies require correct `COOKIE_SECURE`, trusted proxy IPs, overwritten forwarding headers, and an exact `ALLOWED_HOSTS` list.
+
+Before uninstalling, stop traffic and both services and verify a complete encrypted backup. `docker compose down` preserves volumes unless they are explicitly removed; volume removal permanently erases the database. For systemd, disable/remove both units, the proxy site, and release directories. Remove PostgreSQL data/roles, `/etc/token-admin.env`, and the service account only after deciding restoration is unnecessary. Revoke any secret that may have leaked; deleting files does not invalidate it.
