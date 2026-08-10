@@ -154,17 +154,13 @@ def account_row(parsed: ParsedAccount, source_name: str, interval_days: int) -> 
     now = utcnow()
     email_hash = vault.lookup_hash(parsed.email)
     return {
-        "email_encrypted": vault.seal(
-            parsed.email, account_cipher_context(email_hash, "email")
-        ),
+        "email_encrypted": vault.seal(parsed.email, account_cipher_context(email_hash, "email")),
         "email_hash": email_hash,
         "email_masked": mask_email(parsed.email),
         "domain": parsed.email.rsplit("@", 1)[-1],
         # The legacy four-part format contains a password, but OAuth refresh and
         # IMAP XOAUTH2 do not need it. Discard it instead of retaining needless PII.
-        "client_id_encrypted": vault.seal(
-            parsed.client_id, account_cipher_context(email_hash, "client_id")
-        ),
+        "client_id_encrypted": vault.seal(parsed.client_id, account_cipher_context(email_hash, "client_id")),
         "refresh_token_encrypted": vault.seal(
             parsed.refresh_token, account_cipher_context(email_hash, "refresh_token")
         ),
@@ -337,9 +333,7 @@ async def run_account_batch(
 def work_account(account: Account) -> WorkAccount:
     return WorkAccount(
         id=account.id,
-        email=vault.open(
-            account.email_encrypted, account_cipher_context(account.email_hash, "email")
-        ),
+        email=vault.open(account.email_encrypted, account_cipher_context(account.email_hash, "email")),
         client_id=vault.open(
             account.client_id_encrypted,
             account_cipher_context(account.email_hash, "client_id"),

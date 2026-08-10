@@ -78,9 +78,7 @@ vault = SecretVault(settings.encryption_key)
 
 
 def account_cipher_context(email_hash: str, field: str) -> str:
-    valid_hash = len(email_hash) == 64 and all(
-        character in "0123456789abcdef" for character in email_hash
-    )
+    valid_hash = len(email_hash) == 64 and all(character in "0123456789abcdef" for character in email_hash)
     if field not in {"email", "client_id", "refresh_token"} or not valid_hash:
         raise ValueError("账号加密上下文无效")
     return f"account:{email_hash}:{field}"

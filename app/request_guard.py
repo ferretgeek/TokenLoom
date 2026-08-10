@@ -68,9 +68,9 @@ class RequestGuardMiddleware:
             if message.get("type") == "http.request":
                 received += len(message.get("body", b""))
                 if received > limit:
-                    await JSONResponse(
-                        {"detail": "请求正文超过安全上限"}, status_code=413
-                    )(scope, receive, send)
+                    await JSONResponse({"detail": "请求正文超过安全上限"}, status_code=413)(
+                        scope, receive, send
+                    )
                     return
                 chunks.append(message.get("body", b""))
                 if not message.get("more_body", False):
