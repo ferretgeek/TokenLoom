@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import delete, select, update
 
 from .config import settings
-from .crypto import vault
+from .crypto import account_cipher_context, vault
 from .database import SessionLocal, init_db
 from .models import Account, AppSetting, AuditEvent, Job, utcnow
 from .services import (
@@ -308,7 +308,10 @@ async def process_account_job(job_id: str) -> None:
             result = result_map[account.id]
             account.last_refresh_at = now
             if result.refresh_token:
-                account.refresh_token_encrypted = vault.seal(result.refresh_token)
+                account.refresh_token_encrypted = vault.seal(
+                    result.refresh_token,
+                    account_cipher_context(account.email_hash, "refresh_token"),
+                )
                 account.last_refresh_success_at = now
                 account.token_expires_at = now + timedelta(days=90)
                 account.next_refresh_at = now + timedelta(days=interval_days)

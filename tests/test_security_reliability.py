@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import secrets
@@ -9,9 +10,11 @@ import pytest
 from argon2 import PasswordHasher
 from starlette.requests import Request
 
+from app import auth
 from app.auth import COOKIE_NAME, HTTP_COOKIE_NAME, create_session, read_session, session_cookie_name
 from app.config import Settings
 from app.models import Job
+from app.request_guard import RequestGuardMiddleware
 from app.services import ParsedAccount, account_row, job_public, sanitize_error
 from app.worker import read_limited_line, remove_import_spool, safe_spool_path
 
@@ -134,3 +137,65 @@ def test_spool_cleanup_is_confined_to_import_directory(tmp_path, monkeypatch):
 def test_job_progress_is_clamped():
     job = Job(kind="refresh", scope="all", total=10, processed=15, status="completed")
     assert job_public(job)["progress"] == 100
+
+
+def test_login_attempt_reservation_is_atomic_and_bounded():
+    key = "192.0.2.44"
+    auth.clear_failed_logins(key)
+    assert [auth.reserve_login_attempt(key) for _ in range(8)] == [True] * 8
+    assert auth.reserve_login_attempt(key) is False
+    auth.clear_failed_logins(key)
+
+
+def test_request_guard_rejects_unauthenticated_body_before_reading():
+    reached = False
+
+    async def downstream(_scope, _receive, _send):
+        nonlocal reached
+        reached = True
+
+    async def unreadable_receive():
+        raise AssertionError("body must not be read before authentication")
+
+    sent = []
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/api/import",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("127.0.0.1", 1234),
+        "headers": [(b"content-length", str(1024 * 1024).encode("ascii"))],
+    }
+    asyncio.run(RequestGuardMiddleware(downstream)(scope, unreadable_receive, send))
+    assert reached is False
+    assert sent[0]["status"] == 401
+
+
+def test_request_guard_rejects_oversized_login_before_parsing():
+    async def downstream(_scope, _receive, _send):
+        raise AssertionError("oversized request must not reach the route")
+
+    async def unreadable_receive():
+        raise AssertionError("oversized body must not be read")
+
+    sent = []
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/login",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("127.0.0.1", 1234),
+        "headers": [(b"content-length", b"5000")],
+    }
+    asyncio.run(RequestGuardMiddleware(downstream)(scope, unreadable_receive, send))
+    assert sent[0]["status"] == 413

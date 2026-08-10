@@ -31,12 +31,11 @@ from .auth import (
     client_ip,
     create_session,
     hash_ip,
-    login_allowed,
     read_session,
-    record_failed_login,
     request_is_https,
     require_csrf,
     require_session,
+    reserve_login_attempt,
     session_cookie_name,
     verify_admin_key,
 )
@@ -44,6 +43,7 @@ from .config import BASE_DIR, settings
 from .crypto import vault
 from .database import SessionLocal, engine, init_db
 from .models import Account, AppSetting, Job
+from .request_guard import RequestGuardMiddleware
 from .services import (
     STATUS_LABELS,
     account_public,
@@ -72,6 +72,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title=settings.app_name, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
+app.add_middleware(RequestGuardMiddleware)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 
 
@@ -132,7 +133,7 @@ async def login_page(request: Request):
 async def login(request: Request, admin_key: str = Form(...)):
     admin_key = admin_key.strip()
     ip = client_ip(request)
-    if not login_allowed(ip):
+    if not reserve_login_attempt(ip):
         return HTMLResponse(
             templates.get_template("login.html").render(
                 app_name=settings.app_name,
@@ -142,7 +143,6 @@ async def login(request: Request, admin_key: str = Form(...)):
             status_code=429,
         )
     if len(admin_key.encode("utf-8")) > 512 or not await asyncio.to_thread(verify_admin_key, admin_key):
-        record_failed_login(ip)
         return HTMLResponse(
             templates.get_template("login.html").render(
                 app_name=settings.app_name,

@@ -4,6 +4,7 @@ import base64
 import secrets
 
 import pytest
+from cryptography.exceptions import InvalidTag
 
 from app.crypto import SecretVault, mask_email
 from app.services import AccountFormatError, parse_account_line, sanitize_error
@@ -42,9 +43,12 @@ def test_vault_round_trip_and_ciphertext_does_not_contain_plaintext():
     key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("ascii")
     vault = SecretVault(key)
     secret = "a-sensitive-refresh-token-value"  # pragma: allowlist secret
-    ciphertext = vault.seal(secret)
+    context = "account:" + "a" * 64 + ":refresh_token"
+    ciphertext = vault.seal(secret, context)
     assert secret.encode() not in ciphertext
-    assert vault.open(ciphertext) == secret
+    assert vault.open(ciphertext, context) == secret
+    with pytest.raises(InvalidTag):
+        vault.open(ciphertext, "account:" + "b" * 64 + ":refresh_token")
     assert vault.lookup_hash("USER@EXAMPLE.INVALID") == vault.lookup_hash("user@example.invalid")
 
 

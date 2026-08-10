@@ -17,8 +17,9 @@ TokenLoom is a self-hosted console for managing user-authorized Microsoft Outloo
 
 - Streams pasted or TXT imports into durable PostgreSQL jobs that survive worker restarts.
 - Renews one, selected, due, or snapshotted account ranges and runs read-only IMAP XOAUTH2 health checks.
-- Immediately discards the legacy password field; encrypts email, Client ID, and Refresh Token with AES-256-GCM; exposes masked addresses only.
+- Immediately discards the legacy password field; encrypts email, Client ID, and Refresh Token with AES-256-GCM bound to the account identity and field name; exposes masked addresses only. Legacy ciphertexts are upgraded in bounded startup batches.
 - Uses fixed Microsoft OAuth and IMAP destinations, bounded response and input sizes, keyset pagination, batch processing, disk headroom, and retention cleanup.
+- Authenticates protected mutation requests and enforces route-specific body limits before JSON, form, or multipart parsing; login attempts are atomically reserved before Argon2 work.
 - Provides jade, sky, sunset, and exact `#17191d` graphite themes, persisted globally across login and console views.
 
 ## Local QA

@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .crypto import mask_email, normalize_email, vault
+from .crypto import account_cipher_context, mask_email, normalize_email, vault
 from .database import engine
 from .models import Account, AppSetting, AuditEvent, Job, utcnow
 
@@ -152,15 +152,22 @@ async def add_audit(session: AsyncSession, action: str, detail: dict, ip_hash: s
 
 def account_row(parsed: ParsedAccount, source_name: str, interval_days: int) -> dict:
     now = utcnow()
+    email_hash = vault.lookup_hash(parsed.email)
     return {
-        "email_encrypted": vault.seal(parsed.email),
-        "email_hash": vault.lookup_hash(parsed.email),
+        "email_encrypted": vault.seal(
+            parsed.email, account_cipher_context(email_hash, "email")
+        ),
+        "email_hash": email_hash,
         "email_masked": mask_email(parsed.email),
         "domain": parsed.email.rsplit("@", 1)[-1],
         # The legacy four-part format contains a password, but OAuth refresh and
         # IMAP XOAUTH2 do not need it. Discard it instead of retaining needless PII.
-        "client_id_encrypted": vault.seal(parsed.client_id),
-        "refresh_token_encrypted": vault.seal(parsed.refresh_token),
+        "client_id_encrypted": vault.seal(
+            parsed.client_id, account_cipher_context(email_hash, "client_id")
+        ),
+        "refresh_token_encrypted": vault.seal(
+            parsed.refresh_token, account_cipher_context(email_hash, "refresh_token")
+        ),
         "status": "unknown",
         "source_name": source_name[:255],
         "next_refresh_at": now + timedelta(days=interval_days),
@@ -330,9 +337,17 @@ async def run_account_batch(
 def work_account(account: Account) -> WorkAccount:
     return WorkAccount(
         id=account.id,
-        email=vault.open(account.email_encrypted),
-        client_id=vault.open(account.client_id_encrypted),
-        refresh_token=vault.open(account.refresh_token_encrypted),
+        email=vault.open(
+            account.email_encrypted, account_cipher_context(account.email_hash, "email")
+        ),
+        client_id=vault.open(
+            account.client_id_encrypted,
+            account_cipher_context(account.email_hash, "client_id"),
+        ),
+        refresh_token=vault.open(
+            account.refresh_token_encrypted,
+            account_cipher_context(account.email_hash, "refresh_token"),
+        ),
     )
 
 

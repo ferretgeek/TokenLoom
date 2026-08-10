@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import secrets
+import threading
 import time
 from collections import defaultdict, deque
 from ipaddress import ip_address
@@ -22,45 +23,63 @@ _attempts: dict[str, deque[float]] = defaultdict(deque)
 _ATTEMPT_WINDOW_SECONDS = 15 * 60
 _MAX_FAILED_ATTEMPTS = 8
 _MAX_TRACKED_CLIENTS = 4096
+_attempts_lock = threading.Lock()
+_verify_slots = threading.BoundedSemaphore(4)
 
 
 def verify_admin_key(value: str) -> bool:
     if not settings.admin_key_hash:
         return False
-    try:
-        return _hasher.verify(settings.admin_key_hash, value)
-    except (VerifyMismatchError, InvalidHashError):
-        return False
+    with _verify_slots:
+        try:
+            return _hasher.verify(settings.admin_key_hash, value)
+        except (VerifyMismatchError, InvalidHashError):
+            return False
 
 
-def login_allowed(ip: str) -> bool:
-    now = time.time()
-    window = _attempts[ip]
+def _prune_attempts(ip: str, now: float) -> deque[float]:
+    window = _attempts.get(ip, deque())
     while window and window[0] < now - _ATTEMPT_WINDOW_SECONDS:
         window.popleft()
     if not window:
         _attempts.pop(ip, None)
+    return window
+
+
+def reserve_login_attempt(ip: str) -> bool:
+    """Reserve one expensive password verification atomically."""
+    now = time.time()
+    with _attempts_lock:
+        window = _prune_attempts(ip, now)
+        if len(window) >= _MAX_FAILED_ATTEMPTS:
+            return False
+        if ip not in _attempts and len(_attempts) >= _MAX_TRACKED_CLIENTS:
+            expired = [
+                key
+                for key, values in _attempts.items()
+                if not values or values[-1] < now - _ATTEMPT_WINDOW_SECONDS
+            ]
+            for key in expired:
+                _attempts.pop(key, None)
+            while len(_attempts) >= _MAX_TRACKED_CLIENTS:
+                _attempts.pop(next(iter(_attempts)))
+        _attempts[ip].append(now)
         return True
-    return len(window) < _MAX_FAILED_ATTEMPTS
+
+
+def login_allowed(ip: str) -> bool:
+    now = time.time()
+    with _attempts_lock:
+        return len(_prune_attempts(ip, now)) < _MAX_FAILED_ATTEMPTS
 
 
 def record_failed_login(ip: str) -> None:
-    if ip not in _attempts and len(_attempts) >= _MAX_TRACKED_CLIENTS:
-        now = time.time()
-        expired = [
-            key
-            for key, values in _attempts.items()
-            if not values or values[-1] < now - _ATTEMPT_WINDOW_SECONDS
-        ]
-        for key in expired:
-            _attempts.pop(key, None)
-        while len(_attempts) >= _MAX_TRACKED_CLIENTS:
-            _attempts.pop(next(iter(_attempts)))
-    _attempts[ip].append(time.time())
+    reserve_login_attempt(ip)
 
 
 def clear_failed_logins(ip: str) -> None:
-    _attempts.pop(ip, None)
+    with _attempts_lock:
+        _attempts.pop(ip, None)
 
 
 def _sign(payload: bytes) -> str:

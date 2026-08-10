@@ -20,6 +20,7 @@ TokenLoom 是一个自托管的 Microsoft Outlook / Hotmail OAuth2 Refresh Token
 - **克制的数据面：** 旧格式中的邮箱密码解析后立即丢弃；邮箱、Client ID 与 Refresh Token 使用 AES-256-GCM 加密，列表只展示脱敏邮箱。
 - **真实但有边界的检查：** 固定 Microsoft OAuth 端点刷新；IMAP XOAUTH2 只读打开收件箱，不读取或展示邮件正文。
 - **百万级路径意识：** 主键游标分页、任务快照、批处理、上传/单行/响应上限、磁盘余量与历史清理。
+- **前置安全门禁：** 写接口在解析正文前验证会话与 CSRF，并按入口限制请求体；登录尝试原子预留且昂贵哈希具有进程级并发上限。
 - **四套全局主题：** 翡翠、天青、晚霞和 `#17191d` 深灰；右上角切换，登录页与控制台同步保存。
 
 ## 本机预览
@@ -70,6 +71,7 @@ TokenLoom is a self-hosted console for renewing and health-checking user-authori
 
 - Durable PostgreSQL jobs survive worker restarts; imports, scheduled renewal, and read-only IMAP checks are bounded and observable.
 - Legacy plaintext passwords are discarded immediately. Required account fields are AES-256-GCM encrypted, while the UI exposes masked addresses only.
+- Account ciphertexts bind the account identity and field name as authenticated context; legacy ciphertexts are upgraded in bounded startup batches.
 - The application has no configurable outbound target: OAuth and IMAP destinations are fixed to Microsoft endpoints.
 - Jade, sky, sunset, and exact `#17191d` graphite themes persist across the login screen and console.
 - Local QA, Docker Compose, and Ubuntu systemd deployments are documented; any public deployment requires trusted HTTPS.
