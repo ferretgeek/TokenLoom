@@ -35,7 +35,7 @@ def _csv(name: str, default: str) -> frozenset[str]:
 @dataclass(frozen=True, slots=True)
 class Settings:
     app_env: str = os.getenv("APP_ENV", "development").strip().lower()
-    app_name: str = os.getenv("APP_NAME", "令牌织机 · TokenLoom")
+    app_name: str = os.getenv("APP_NAME", "Outlook 令牌续期")
     database_url: str = os.getenv(
         "DATABASE_URL", f"sqlite+aiosqlite:///{(BASE_DIR / 'data' / 'dev.db').as_posix()}"
     )

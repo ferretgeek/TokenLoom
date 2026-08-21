@@ -2,7 +2,7 @@ name: token-loom
 
 x-app-environment: &app-environment
   APP_ENV: production
-  APP_NAME: 令牌织机 · TokenLoom
+  APP_NAME: Outlook 令牌续期
   DATABASE_URL: postgresql+asyncpg://token_loom:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/token_loom
   ADMIN_KEY_HASH: ${ADMIN_KEY_HASH:?set ADMIN_KEY_HASH in .env}
   SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}

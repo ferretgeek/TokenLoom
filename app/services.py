@@ -21,7 +21,7 @@ from .models import Account, AppSetting, AuditEvent, Job, utcnow
 
 TOKEN_URL = "https://login.live.com/oauth20_token.srf"
 REDIRECT_URI = "https://login.live.com/oauth20_desktop.srf"
-USER_AGENT = "TokenLoom/1.0 (+https://github.com/ferretgeek/TokenLoom)"
+USER_AGENT = "TokenLoom/1.0 (+https://github.com/ferretgeek/outlook-token-keeper)"
 MAX_OAUTH_RESPONSE_BYTES = 64 * 1024
 PERMANENT_ERRORS = {
     "invalid_grant",

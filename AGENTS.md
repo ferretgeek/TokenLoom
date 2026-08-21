@@ -1,4 +1,4 @@
-# TokenLoom project rules
+# Outlook token keeper — project rules
 
 - Read the workspace root `README.md`, this file, and the project README before changing the project.
 - Never add real accounts, email addresses, passwords, Client IDs, refresh/access tokens, server addresses, deployment identities, databases, logs, import files, screenshots, or environment files.

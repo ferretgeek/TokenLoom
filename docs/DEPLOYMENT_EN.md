@@ -1,4 +1,4 @@
-# TokenLoom deployment
+# Outlook token keeper — deployment
 
 Every runtime mode requires a valid Argon2id admin-key hash, session secret, and 32-byte field-encryption key. There are no usable default secrets. A public endpoint must use trusted HTTPS, while the application remains bound to loopback or a private container network.
 

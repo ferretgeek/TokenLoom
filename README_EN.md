@@ -1,30 +1,40 @@
-# TokenLoom / 令牌织机 — Outlook OAuth Token Renewal
+# Outlook token keeper
 
-[![CI](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml/badge.svg)](https://github.com/ferretgeek/TokenLoom/actions/workflows/codeql.yml)
-[![Release](https://img.shields.io/github/v/release/ferretgeek/TokenLoom?style=flat-square)](https://github.com/ferretgeek/TokenLoom/releases)
+[中文](README.md) · English
+
+[![CI](https://github.com/ferretgeek/outlook-token-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/ferretgeek/outlook-token-keeper/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ferretgeek/outlook-token-keeper/actions/workflows/codeql.yml/badge.svg)](https://github.com/ferretgeek/outlook-token-keeper/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/ferretgeek/outlook-token-keeper?style=flat-square)](https://github.com/ferretgeek/outlook-token-keeper/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-168a70.svg?style=flat-square)](LICENSE)
 
-> Weave authorized token renewal, health checks, and exceptions into one visible rhythm.
+[![Interface preview](docs/images/dashboard.png)](https://ferretgeek.github.io/outlook-token-keeper/)
 
-[![TokenLoom interface preview](docs/images/dashboard.png)](https://ferretgeek.github.io/TokenLoom/)
+[Live demo](https://ferretgeek.github.io/outlook-token-keeper/) · [Deployment](docs/DEPLOYMENT_EN.md) · [Security policy](SECURITY.md)
 
-[Live demo](https://ferretgeek.github.io/TokenLoom/) · [中文](README.md) · [Deployment](docs/DEPLOYMENT_EN.md) · [Security](SECURITY.md)
+> Renew a batch of authorized Outlook OAuth tokens before they expire, and verify read-only that the mailboxes still connect.
 
-TokenLoom is a self-hosted console for managing user-authorized Microsoft Outlook / Hotmail OAuth2 refresh tokens. It neither supplies accounts or tokens nor bypasses Microsoft authorization, risk controls, or terms.
+## Why this exists
 
-## What it does
+Microsoft OAuth refresh tokens don't last forever: leave one unused long enough and it lapses, and certain account-side changes invalidate it too.
 
-- Streams pasted or TXT imports into durable PostgreSQL jobs that survive worker restarts.
-- Renews one, selected, due, or snapshotted account ranges and runs read-only IMAP XOAUTH2 health checks.
-- Immediately discards the legacy password field; encrypts email, Client ID, and Refresh Token with AES-256-GCM bound to the account identity and field name; exposes masked addresses only. Legacy ciphertexts are upgraded in bounded startup batches.
-- Uses fixed Microsoft OAuth and IMAP destinations, bounded response and input sizes, keyset pagination, batch processing, disk headroom, and retention cleanup.
-- Authenticates protected mutation requests and enforces route-specific body limits before JSON, form, or multipart parsing; login attempts are atomically reserved before Argon2 work.
-- Provides jade, sky, sunset, and exact `#17191d` graphite themes, persisted globally across login and console views.
+With one or two accounts you just click renew. With dozens or hundreds of **explicitly authorized** accounts it's a different problem — you need to know which are expiring, which already failed, and which renewed successfully but whose mailbox no longer connects. And it has to run on a schedule, resume after a crash, and leave a trail when something goes wrong.
 
-## Local QA
+This is that schedule: **import, renew on a timer, health-check read-only, and record exceptions** — all on your own server.
 
-Python 3.11+ is required:
+> **Use it only for accounts and tokens you own or are explicitly authorized to administer.** It doesn't harvest accounts, doesn't supply tokens, and doesn't bypass Microsoft's authorization, risk controls, or terms.
+
+## What you get
+
+- **A recoverable workflow** — streaming TXT import, durable PostgreSQL job queue, single / selected / expiring-range job modes, and workers that resume after restart.
+- **A restrained data plane** — legacy plaintext mailbox passwords are **discarded immediately** after parsing; addresses, client IDs, and refresh tokens are AES-256-GCM encrypted, and lists show masked addresses only.
+- **Real but bounded checks** — refresh against fixed Microsoft OAuth endpoints; IMAP XOAUTH2 opens the inbox read-only and **never reads or displays message bodies.**
+- **Built for large sets** — primary-key cursor paging, job snapshots, batching, upload / line / response ceilings, free-disk checks, and history cleanup.
+- **Security checks up front** — write endpoints validate session and CSRF **before parsing the body** and cap request size per endpoint; login attempts are atomically reserved, and the expensive hash has a process-wide concurrency limit.
+- **Four global themes** — Emerald, Azure, Sunset, and exact `#17191d` graphite, persisted across the login screen and the console.
+
+## Local preview
+
+Requires Python 3.11+:
 
 ```powershell
 python -m venv .venv
@@ -32,16 +42,18 @@ python -m venv .venv
 .\.venv\Scripts\python scripts\run_qa.py
 ```
 
-Open `http://127.0.0.1:8787/`. The temporary admin key is written only to the ignored `data/qa-*-admin-key.txt` path. Stop and clean the local run with:
+Open `http://127.0.0.1:8787/`. The temporary admin key is written only to a git-ignored `data/qa-*-admin-key.txt`.
+
+Clean up afterwards:
 
 ```powershell
 .\.venv\Scripts\python scripts\stop_qa.py
 .\.venv\Scripts\python scripts\cleanup_qa.py
 ```
 
-## Docker Compose
+## Docker deployment
 
-Generate secrets on a trusted machine, then start the loopback-bound web app, worker, and PostgreSQL services:
+Generate the admin key and `.env` on a trusted machine first, then start the loopback-bound web, worker, and PostgreSQL services:
 
 ```powershell
 .\.venv\Scripts\python scripts\generate_admin_key.py --output .\admin-key.txt
@@ -49,15 +61,34 @@ Generate secrets on a trusted machine, then start the loopback-bound web app, wo
 docker compose up -d --build
 ```
 
-Visit `http://127.0.0.1:8787/`. A public deployment must sit behind a trusted HTTPS reverse proxy and set `COOKIE_SECURE`, `TRUST_PROXY_HEADERS`, `TRUSTED_PROXY_IPS`, and `ALLOWED_HOSTS` explicitly. See [Deployment](docs/DEPLOYMENT_EN.md) for Docker and Ubuntu systemd instructions.
+Then open `http://127.0.0.1:8787/`.
 
-## Security boundary
+**A public server must sit behind a trusted HTTPS reverse proxy**, with `COOKIE_SECURE`, `TRUST_PROXY_HEADERS`, `TRUSTED_PROXY_IPS`, and `ALLOWED_HOSTS` set to match. The Ubuntu 24.04 systemd setup, updates, and backups are covered in the [deployment guide](docs/DEPLOYMENT_EN.md).
 
-TokenLoom reduces exposure from a database-only leak, but it cannot protect data after the host or application process is compromised. Keep the field-encryption key separate from database backups, use one worker, rotate the session secret to revoke every session, and never put production data in tests or screenshots.
+## Worth noting technically
 
-Use the project only for accounts and tokens you own or are explicitly authorized to administer. TokenLoom is independent of and not endorsed by Microsoft.
+**Encryption binds identity and field name.** Account ciphertexts use "account identity + field name" as authenticated context (AEAD AAD) — so even with database access, nobody can move account A's ciphertext into account B's field and have it accepted. Legacy ciphertexts are upgraded in **bounded startup batches** rather than pulling the whole table into memory.
 
-## Quality gate
+**Legacy plaintext passwords are discarded immediately.** When an import carries a mailbox password from an old format, it's dropped right after parsing — never stored, never logged. This project only wants refresh tokens.
+
+**There is no configurable outbound target.** OAuth and IMAP destinations are pinned to Microsoft endpoints. A tool that can be configured to send your tokens somewhere arbitrary is a backdoor.
+
+**Security checks come before body parsing.** Write endpoints validate the session and CSRF, cap request size per endpoint, and **then** parse. In the other order, one unauthenticated large request could consume your memory.
+
+**Login attempts are atomically reserved.** Counters reserve atomically to prevent concurrent rate-limit bypass, and the expensive password hash has a process-wide concurrency limit so the login endpoint can't be used to saturate the CPU.
+
+**Paging designed for millions of rows.** Lists use primary-key cursor paging rather than `OFFSET`, jobs carry snapshots, imports are batched, and upload size, line length, and response size all have ceilings, alongside free-disk checks and periodic history cleanup.
+
+Architecture and capacity boundaries are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); privacy boundaries in [PRIVACY.md](PRIVACY.md).
+
+## What it doesn't do
+
+- It doesn't harvest accounts, supply tokens, or obtain authorization on your behalf.
+- It doesn't bypass Microsoft's authorization, risk controls, or terms.
+- It doesn't read, store, or display message bodies (the health check only confirms the inbox can be opened).
+- It neither accepts nor retains mailbox passwords.
+
+## Pre-release checks
 
 ```powershell
 .\.venv\Scripts\python -m ruff format --check app scripts tests
@@ -66,8 +97,12 @@ Use the project only for accounts and tokens you own or are explicitly authorize
 .\.venv\Scripts\python -m pip_audit -r requirements.txt --progress-spinner off
 ```
 
-See [Privacy](PRIVACY.md), [Architecture](docs/ARCHITECTURE.md), and [Security](SECURITY.md) for the exact data and operational boundaries.
+## More documentation
 
-## License
+[Deployment](docs/DEPLOYMENT_EN.md) · [Architecture and capacity](docs/ARCHITECTURE.md) · [Privacy](PRIVACY.md) · [Release audit](docs/发布审计.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
+
+## License and disclaimer
 
 [MIT](LICENSE). Direct dependency licenses are summarized in [THIRD_PARTY.md](THIRD_PARTY.md).
+
+Independent project with no affiliation with, authorization from, or endorsement by Microsoft.
